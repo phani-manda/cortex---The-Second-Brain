@@ -67,7 +67,7 @@ export function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 relative">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 relative">
         {/* Floating Elements (Parallax) */}
         <motion.div
           style={{ y: floatingY1 }}
@@ -106,7 +106,7 @@ export function Dashboard() {
         {/* Hero */}
         <motion.div
           style={{ opacity: heroOpacity, y: heroY }}
-          className="text-center space-y-4 pt-8 pb-4"
+          className="text-center space-y-5 pt-6 pb-6"
         >
           <motion.div
             initial={{ scale: 0 }}
@@ -141,14 +141,14 @@ export function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="max-w-2xl mx-auto"
+          className="max-w-2xl mx-auto px-2"
         >
           <CaptureForm
             onNoteCreated={() => setRefreshTrigger((prev) => prev + 1)}
           />
         </motion.div>
 
-        <Separator className="max-w-xs mx-auto opacity-50" />
+        <Separator className="max-w-sm mx-auto opacity-40" />
 
         {/* Dashboard Grid */}
         <motion.div
@@ -161,10 +161,10 @@ export function Dashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 mt-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center">
+      <footer className="border-t border-border/40 mt-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
           <p className="text-xs text-muted-foreground">
-            Cortex – Built with Next.js, Prisma, Google Gemini & Framer Motion
+            Cortex – Built with Next.js, Prisma, Groq AI & Framer Motion
           </p>
         </div>
       </footer>

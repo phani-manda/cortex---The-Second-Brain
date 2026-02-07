@@ -4,12 +4,14 @@
  * Agent Thinking: This module enables conversational querying against
  * the user's knowledge base. It uses RAG (Retrieval Augmented Generation)
  * to find relevant notes and answer questions based on stored knowledge.
+ * 
+ * Using Groq for blazing fast inference with Llama 3 models.
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { getAllNotes } from "@/lib/db";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
 export type QueryResult = {
   answer: string;
@@ -35,31 +37,26 @@ export async function queryKnowledgeBase(question: string): Promise<QueryResult>
       };
     }
 
-    // Build context from notes
-    const context = notes
-      .slice(0, 20) // Limit to most recent 20 notes for context window
+    // Build context from notes (prioritize high priority notes)
+    const sortedNotes = [...notes].sort((a, b) => (b.priority || 50) - (a.priority || 50));
+    const context = sortedNotes
+      .slice(0, 20) // Limit to top 20 notes for context window
       .map(
         (note) =>
-          `[ID: ${note.id}] Title: ${note.title}\nSummary: ${note.summary || "N/A"}\nContent: ${note.content}\nTags: ${note.tags.join(", ")}\n---`
+          `[ID: ${note.id}] Title: ${note.title}\nPriority: ${note.priority || 50}\nSummary: ${note.summary || "N/A"}\nContent: ${note.content}\nTags: ${note.tags.join(", ")}\n---`
       )
       .join("\n\n");
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const systemPrompt = `You are an intelligent assistant helping a user query their personal knowledge base (Second Brain). 
 
-    const prompt = `You are an intelligent assistant helping a user query their personal knowledge base (Second Brain). 
-
-Below are the user's stored notes and insights. Answer their question based ONLY on this information. If the answer isn't in the knowledge base, say so honestly.
-
-KNOWLEDGE BASE:
-${context}
-
-USER QUESTION: ${question}
+Answer their question based ONLY on the provided notes. If the answer isn't in the knowledge base, say so honestly.
 
 Instructions:
 1. Answer the question clearly and concisely based on the knowledge base content
 2. Reference specific notes by their titles when relevant
 3. If the question cannot be answered from the available notes, acknowledge this
 4. Keep your response helpful and conversational
+5. Consider note priority when determining relevance
 
 Respond in JSON format:
 {
@@ -68,31 +65,70 @@ Respond in JSON format:
   "confidence": "high" | "medium" | "low"
 }`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
+    const userPrompt = `KNOWLEDGE BASE:
+${context}
 
-    // Clean and parse the response
-    const cleaned = text
-      .replace(/```json\s*/g, "")
-      .replace(/```\s*/g, "")
-      .trim();
+USER QUESTION: ${question}`;
 
-    const parsed = JSON.parse(cleaned);
+    // Try Groq models
+    const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
+    
+    for (const modelName of models) {
+      try {
+        const completion = await groq.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          model: modelName,
+          temperature: 0.3,
+          max_tokens: 1000,
+          response_format: { type: "json_object" },
+        });
 
-    // Find the referenced notes
-    const relevantNotes = notes
-      .filter((note) => parsed.relevantNoteIds?.includes(note.id))
-      .map((note) => ({
-        id: note.id,
-        title: note.title,
-        summary: note.summary,
-      }));
+        const text = completion.choices[0]?.message?.content || "{}";
 
+        // Clean and parse the response
+        const cleaned = text
+          .replace(/```json\s*/g, "")
+          .replace(/```\s*/g, "")
+          .trim();
+
+        const parsed = JSON.parse(cleaned);
+
+        // Find the referenced notes
+        const relevantNotes = notes
+          .filter((note) => parsed.relevantNoteIds?.includes(note.id))
+          .map((note) => ({
+            id: note.id,
+            title: note.title,
+            summary: note.summary,
+          }));
+
+        return {
+          answer: parsed.answer || "I couldn't generate a response.",
+          sources: relevantNotes,
+          confidence: parsed.confidence || "medium",
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        // If rate limited, try next model
+        if (errorMessage.includes("429") || errorMessage.includes("rate") || errorMessage.includes("limit")) {
+          console.warn(`Model ${modelName} rate limited, trying next model...`);
+          continue;
+        }
+        
+        console.error(`Query failed with ${modelName}:`, errorMessage);
+        continue;
+      }
+    }
+
+    // All models failed
     return {
-      answer: parsed.answer || "I couldn't generate a response.",
-      sources: relevantNotes,
-      confidence: parsed.confidence || "medium",
+      answer: "I'm currently unable to process your query. Please try again in a moment.",
+      sources: [],
+      confidence: "low",
     };
   } catch (error) {
     console.error("Query failed:", error);

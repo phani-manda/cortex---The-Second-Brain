@@ -90,26 +90,29 @@ export function NoteCard({ note, index, onDelete, onTogglePublic, onOpen }: Note
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
       transition={{
-        duration: 0.4,
-        delay: index * 0.05,
+        duration: 0.5,
         ease: [0.22, 1, 0.36, 1],
       }}
       layout
-      whileHover={{ scale: 1.02 }}
-      className="group cursor-pointer"
+      whileHover={{ 
+        scale: 1.02,
+        transition: { duration: 0.2, ease: "easeOut" }
+      }}
+      whileTap={{ scale: 0.98 }}
+      className="group cursor-pointer h-full"
       onClick={handleCardClick}
     >
-      <Card className="h-full border-border/50 bg-card/80 backdrop-blur-sm transition-shadow duration-300 hover:shadow-lg hover:shadow-primary/5 relative overflow-hidden">
+      <Card className="h-full border-border/40 bg-card/90 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 relative overflow-hidden">
         {/* Priority Indicator Bar - subtle gradient */}
         <div 
           className={`absolute top-0 left-0 h-1 bg-gradient-to-r ${priorityInfo.bg} opacity-80 transition-all`}
           style={{ width: `${note.priority ?? 50}%`, minWidth: "10px" }}
         />
-        <CardHeader className="pb-3 pt-4">
+        <CardHeader className="pb-3 pt-5 px-5">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <Badge
@@ -151,7 +154,7 @@ export function NoteCard({ note, index, onDelete, onTogglePublic, onOpen }: Note
             {note.title}
           </h3>
         </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+        <CardContent className="pt-0 pb-5 px-5 space-y-3">
           {note.summary && (
             <p className="text-sm text-muted-foreground leading-relaxed">
               {note.summary}

@@ -37,6 +37,33 @@ const sortOptions = [
   { value: "priority", label: "Priority", icon: TrendingUp },
 ];
 
+// Container animation for staggered children
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+// Individual item animation
+const itemVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100,
+      damping: 15,
+    },
+  },
+};
+
 export function NoteGrid({ refreshTrigger }: NoteGridProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +73,7 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const handleOpenNote = (note: Note) => {
     setSelectedNote(note);
@@ -83,8 +111,11 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
   }, [debouncedQuery, activeFilter, sortBy]);
 
   useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes, refreshTrigger]);
+    fetchNotes().then(() => {
+      // Mark as loaded after first fetch for animation purposes
+      if (!hasLoaded) setHasLoaded(true);
+    });
+  }, [fetchNotes, refreshTrigger, hasLoaded]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -107,9 +138,13 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Search & Filter Bar */}
-      <div className="flex flex-col gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="flex flex-col gap-5">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -166,15 +201,20 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       {/* Notes Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6"
+        >
           {Array.from({ length: 6 }).map((_, i) => (
             <NoteCardSkeleton key={i} index={i} />
           ))}
-        </div>
+        </motion.div>
       ) : notes.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -193,19 +233,22 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
         </motion.div>
       ) : (
         <motion.div
-          layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6"
         >
           <AnimatePresence mode="popLayout">
             {notes.map((note, index) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                index={index}
-                onDelete={handleDelete}
-                onTogglePublic={handleTogglePublic}
-                onOpen={handleOpenNote}
-              />
+              <motion.div key={note.id} variants={itemVariants} layout>
+                <NoteCard
+                  note={note}
+                  index={index}
+                  onDelete={handleDelete}
+                  onTogglePublic={handleTogglePublic}
+                  onOpen={handleOpenNote}
+                />
+              </motion.div>
             ))}
           </AnimatePresence>
         </motion.div>

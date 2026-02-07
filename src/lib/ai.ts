@@ -24,38 +24,88 @@ export type AIAnalysis = {
   type: "NOTE" | "LINK" | "INSIGHT" | "FILE";
   title: string;
   priority: number; // 1-100 relevance score
+  keywords: string[]; // Important keywords extracted from content
 };
+
+// Priority keywords with their weight multipliers
+const PRIORITY_KEYWORDS = {
+  // Critical (90-100)
+  critical: { words: ["urgent", "emergency", "critical", "deadline", "asap", "immediately", "breaking"], weight: 95 },
+  // High importance (70-89)
+  high: { words: ["important", "key", "essential", "must", "required", "decision", "action", "priority"], weight: 80 },
+  // Insights (70-85)
+  insight: { words: ["realize", "discovered", "breakthrough", "aha", "finally understand", "learned", "insight", "revelation"], weight: 78 },
+  // Actionable (65-75)
+  actionable: { words: ["todo", "task", "do", "implement", "create", "build", "fix", "resolve", "schedule"], weight: 70 },
+  // Learning (60-75)
+  learning: { words: ["learn", "study", "research", "explore", "understand", "practice", "improve"], weight: 68 },
+  // Ideas (55-70)
+  ideas: { words: ["idea", "concept", "thought", "vision", "plan", "strategy", "approach"], weight: 65 },
+  // Reference (40-55)
+  reference: { words: ["note", "remember", "reference", "bookmark", "save", "keep"], weight: 50 },
+};
+
+/**
+ * Extract important keywords from text and calculate priority score
+ */
+function extractKeywordsAndPriority(text: string): { keywords: string[]; basePriority: number } {
+  const lowercaseText = text.toLowerCase();
+  const foundKeywords: string[] = [];
+  let maxPriority = 50; // Default medium priority
+  
+  // Check each category
+  for (const [category, config] of Object.entries(PRIORITY_KEYWORDS)) {
+    for (const word of config.words) {
+      if (lowercaseText.includes(word)) {
+        foundKeywords.push(word);
+        if (config.weight > maxPriority) {
+          maxPriority = config.weight;
+        }
+      }
+    }
+  }
+  
+  // Boost priority for longer, more detailed content (likely more valuable)
+  const wordCount = text.split(/\s+/).length;
+  if (wordCount > 100) maxPriority = Math.min(100, maxPriority + 5);
+  if (wordCount > 200) maxPriority = Math.min(100, maxPriority + 5);
+  
+  // Boost for questions (indicates active thinking)
+  if (text.includes("?")) maxPriority = Math.min(100, maxPriority + 3);
+  
+  // Boost for numbered lists or bullet points (organized thinking)
+  if (/\d+\.|[-•*]/.test(text)) maxPriority = Math.min(100, maxPriority + 3);
+  
+  return {
+    keywords: [...new Set(foundKeywords)].slice(0, 5),
+    basePriority: maxPriority,
+  };
+}
 
 /**
  * Generate fallback analysis when AI is unavailable
  */
 function generateFallbackAnalysis(rawText: string, contentType?: "text" | "link" | "file"): AIAnalysis {
-  // Simple keyword-based tagging
+  // Extract keywords and calculate priority using the smart algorithm
+  const { keywords, basePriority } = extractKeywordsAndPriority(rawText);
   const lowercaseText = rawText.toLowerCase();
   const suggestedTags: string[] = [];
   
-  // Detect common topics
+  // Detect common topics for tagging
   if (lowercaseText.includes("learn") || lowercaseText.includes("study")) suggestedTags.push("learning");
   if (lowercaseText.includes("idea") || lowercaseText.includes("think")) suggestedTags.push("ideas");
   if (lowercaseText.includes("todo") || lowercaseText.includes("need to")) suggestedTags.push("tasks");
   if (lowercaseText.includes("project")) suggestedTags.push("project");
   if (lowercaseText.includes("code") || lowercaseText.includes("programming")) suggestedTags.push("coding");
+  if (lowercaseText.includes("meeting") || lowercaseText.includes("call")) suggestedTags.push("meetings");
+  if (lowercaseText.includes("book") || lowercaseText.includes("article")) suggestedTags.push("reading");
   
   // Detect insight patterns
   const isInsight = lowercaseText.includes("realize") || 
                     lowercaseText.includes("aha") || 
                     lowercaseText.includes("finally understand") ||
-                    lowercaseText.includes("breakthrough");
-  
-  // Detect urgency for priority
-  let priority = 50;
-  if (lowercaseText.includes("urgent") || lowercaseText.includes("deadline") || lowercaseText.includes("asap")) {
-    priority = 85;
-  } else if (lowercaseText.includes("important") || lowercaseText.includes("critical")) {
-    priority = 75;
-  } else if (isInsight) {
-    priority = 70;
-  }
+                    lowercaseText.includes("breakthrough") ||
+                    lowercaseText.includes("discovered");
   
   // Determine type
   let type: "NOTE" | "LINK" | "INSIGHT" | "FILE" = "NOTE";
@@ -72,7 +122,8 @@ function generateFallbackAnalysis(rawText: string, contentType?: "text" | "link"
     summary: rawText.slice(0, 100) + (rawText.length > 100 ? "..." : ""),
     tags: suggestedTags.length > 0 ? suggestedTags.slice(0, 3) : [],
     type,
-    priority,
+    priority: basePriority,
+    keywords,
   };
 }
 
@@ -90,17 +141,19 @@ export async function analyzeContent(rawText: string, contentType?: "text" | "li
 1. "title": A concise, descriptive title for this thought (max 8 words).
 2. "summary": A concise 1-sentence summary of the key idea.
 3. "tags": An array of 2-5 relevant tags (lowercase, no hashtags).
-4. "type": Classify as one of:
+4. "keywords": An array of 3-5 important keywords that determine this content's priority/importance (lowercase). Focus on action words, urgency indicators, domain terms.
+5. "type": Classify as one of:
    - "NOTE" for general thoughts, ideas, or reflections
    - "LINK" if the text contains or references a URL or external resource
    - "INSIGHT" if it contains a realization, learning, breakthrough, or aha-moment
    - "FILE" if this is describing a file attachment
-5. "priority": A number from 1-100 indicating importance:
-   - 90-100: Critical insights, breakthroughs, urgent actionable items
-   - 70-89: Important learnings, key decisions, valuable references
-   - 50-69: Useful information, general knowledge, standard notes
-   - 30-49: Low priority, nice-to-have, background info
-   - 1-29: Very low priority, trivial, or redundant information
+6. "priority": A number from 1-100 indicating importance based on these keywords and factors:
+   - 90-100: Critical (contains: urgent, deadline, emergency, asap, critical)
+   - 75-89: High (contains: important, key decision, must-do, action required)
+   - 65-74: Insight (contains: realized, discovered, breakthrough, learned)
+   - 50-64: Standard (general notes, information, ideas)
+   - 30-49: Low (nice-to-have, reference, bookmark)
+   - 1-29: Minimal (trivial, filler, redundant)
 
 Consider: Actionability, Uniqueness, Relevance, Depth.
 
@@ -142,12 +195,19 @@ ${rawText}
       // Clamp priority between 1-100
       const priority = Math.min(100, Math.max(1, parsed.priority || 50));
       
+      // Extract keywords from AI or use fallback extraction
+      const { keywords: fallbackKeywords } = extractKeywordsAndPriority(rawText);
+      const keywords = Array.isArray(parsed.keywords) && parsed.keywords.length > 0 
+        ? parsed.keywords.slice(0, 5) 
+        : fallbackKeywords;
+      
       return {
         title: parsed.title || "Untitled Thought",
         summary: parsed.summary || "No summary generated.",
         tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 5) : [],
         type: validTypes.includes(normalizedType) ? normalizedType : "NOTE",
         priority,
+        keywords,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
