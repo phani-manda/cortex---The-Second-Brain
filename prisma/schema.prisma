@@ -1,0 +1,27 @@
+// Cortex – The AI Second Brain
+// Prisma Schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  type      String   @default("NOTE") // NOTE, LINK, INSIGHT, FILE
+  tags      String[]
+  summary   String?
+  isPublic  Boolean  @default(false)
+  priority  Int      @default(50) // 1-100 relevance score (AI-determined)
+  sourceUrl String?  // For links - the original URL
+  fileName  String?  // For files - original filename
+  fileType  String?  // For files - mime type (image/pdf/etc)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
