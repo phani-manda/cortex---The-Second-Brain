@@ -99,7 +99,9 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
       if (activeFilter !== "ALL") params.set("type", activeFilter);
       params.set("sort", sortBy);
 
-      const res = await fetch(`/api/notes?${params.toString()}`);
+      const res = await fetch(`/api/notes?${params.toString()}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setNotes(data);

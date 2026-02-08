@@ -79,7 +79,7 @@ export default function LoginPage() {
         <Card className="w-full max-w-md border-2 border-zinc-500/20 bg-card/60 backdrop-blur-xl shadow-2xl shadow-zinc-900/20 overflow-hidden relative">
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-zinc-900/20 via-transparent to-zinc-800/20 pointer-events-none" />
-          <CardHeader className="text-center relative">
+          <CardHeader className="text-center relative space-y-4 pb-2">
             <motion.div 
               className="flex justify-center mb-4"
               animate={{ y: [0, -10, 0] }}
@@ -100,7 +100,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
 
-        <CardContent className="relative">
+        <CardContent className="relative pt-2 pb-6 px-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <AnimatePresence mode="wait">
               {mode === "register" && (

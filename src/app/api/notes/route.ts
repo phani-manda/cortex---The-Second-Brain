@@ -130,7 +130,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(notes, {
-      headers: rateLimitHeaders(rateCheck),
+      headers: {
+        ...rateLimitHeaders(rateCheck),
+        "Cache-Control": "no-store, max-age=0",
+      },
     });
   } catch (error) {
     console.error("Error fetching notes:", error);
