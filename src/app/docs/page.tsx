@@ -54,9 +54,14 @@ export default function DocsPage() {
             <ul className="space-y-3 text-muted-foreground">
               <li>
                 <code className="text-primary">lib/ai.ts</code> — The AI Service. 
-                Handles all communication with Google Gemini. Contains the prompt 
-                engineering, response parsing, and fallback logic. Swapping to 
-                OpenAI or Anthropic requires changes <em>only</em> in this file.
+                Handles all communication with Groq AI (Llama 3.3-70b). Contains the prompt 
+                engineering, response parsing, priority scoring, and multi-model fallback chain. 
+                Swapping to OpenAI or Anthropic requires changes <em>only</em> in this file.
+              </li>
+              <li>
+                <code className="text-primary">lib/query.ts</code> — The Query Service. 
+                RAG-based knowledge retrieval with context windowing. Pulls relevant notes, 
+                injects them as context, and generates answers with source citations.
               </li>
               <li>
                 <code className="text-primary">lib/db.ts</code> — The Database Service. 
@@ -77,7 +82,8 @@ export default function DocsPage() {
                 <strong className="text-foreground">Why this matters:</strong> In 
                 production, teams can swap infrastructure without refactoring business 
                 logic. The AI model, database provider, and hosting platform are all 
-                independently replaceable.
+                independently replaceable. We migrated from Google Gemini to Groq in 
+                under 30 minutes by modifying only two files.
               </p>
             </div>
           </section>
@@ -90,25 +96,36 @@ export default function DocsPage() {
             <p className="text-muted-foreground leading-relaxed mb-4">
               We prioritize <strong className="text-foreground">Low-Friction Capture</strong> — 
               letting the user dump raw thoughts while the AI handles the organization. 
-              The design philosophy centers around three principles:
+              Our design philosophy centers around five core principles:
             </p>
             <ul className="space-y-3 text-muted-foreground">
               <li>
-                <strong className="text-foreground">Zero-config input:</strong> There are 
+                <strong className="text-foreground">1. Zero-config input:</strong> There are 
                 no categories to choose, no tags to manually assign, no structured forms 
                 to fill out. Users type a thought and press one button. The AI does the rest.
               </li>
               <li>
-                <strong className="text-foreground">Immediate feedback:</strong> The 
+                <strong className="text-foreground">2. Immediate feedback:</strong> The 
                 &quot;Save to Brain&quot; button transitions through visual states — idle, 
                 processing (&quot;AI is organizing...&quot;), and success — giving users 
                 confidence that their thought was captured and understood.
               </li>
               <li>
-                <strong className="text-foreground">Progressive disclosure:</strong> The 
+                <strong className="text-foreground">3. Progressive disclosure:</strong> The 
                 dashboard starts simple (just cards) but reveals depth on interaction — 
                 hover effects expose actions, search narrows results in real-time, and 
                 type filters let power users drill down.
+              </li>
+              <li>
+                <strong className="text-foreground">4. AI as assistant, not gatekeeper:</strong> The 
+                system never blocks the user. If AI analysis fails, notes are saved with 
+                auto-generated fallback metadata. The AI enhances — it never interrupts.
+              </li>
+              <li>
+                <strong className="text-foreground">5. Priority-driven attention:</strong> Notes 
+                are sorted by AI-calculated importance, not just recency. Critical tasks 
+                and breakthrough insights surface automatically. Visual priority bars 
+                communicate urgency at a glance.
               </li>
             </ul>
           </section>
@@ -120,9 +137,9 @@ export default function DocsPage() {
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               The system isn&apos;t passive storage; it&apos;s an{" "}
-              <strong className="text-foreground">active librarian</strong> that tags 
-              and summarizes data automatically. Every piece of content that enters 
-              Cortex goes through an AI analysis pipeline:
+              <strong className="text-foreground">active librarian</strong> that tags, 
+              summarizes, and prioritizes data automatically. Every piece of content 
+              that enters Cortex goes through an AI analysis pipeline:
             </p>
             <ol className="space-y-3 text-muted-foreground list-decimal list-inside">
               <li>
@@ -144,12 +161,39 @@ export default function DocsPage() {
                 descriptive title is created so the user never has to name their 
                 thoughts manually.
               </li>
+              <li>
+                <strong className="text-foreground">Priority scoring:</strong> A 1-100 
+                importance score is calculated based on keyword analysis, content depth, 
+                and organizational markers.
+              </li>
             </ol>
+            
+            {/* Priority Algorithm Details */}
+            <div className="mt-6 p-4 rounded-lg bg-zinc-900/50 border border-border/50">
+              <p className="text-sm font-medium text-foreground mb-3">Priority Algorithm</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                The priority scoring system uses weighted keyword extraction:
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 font-mono">
+                <li>• Critical (95): urgent, emergency, deadline, asap</li>
+                <li>• High (80): important, essential, must, decision</li>
+                <li>• Insight (78): breakthrough, aha, learned, revelation</li>
+                <li>• Actionable (70): todo, implement, build, fix</li>
+                <li>• Learning (68): study, research, explore</li>
+                <li>• Ideas (65): concept, vision, strategy</li>
+                <li>• Reference (50): note, remember, bookmark</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-3">
+                Bonuses: +5 for 100+ words, +5 for 200+ words, +3 for questions, +3 for lists.
+              </p>
+            </div>
+            
             <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border/50">
               <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Resilience:</strong> If the AI service 
-                is unavailable, the system gracefully degrades — notes are saved with 
-                auto-generated fallback metadata rather than failing entirely.
+                <strong className="text-foreground">Resilience:</strong> The system uses a 
+                multi-model fallback chain (Llama 3.3-70b → Llama 3.1-8b → Mixtral 8x7b). 
+                If all AI services fail, notes are saved with auto-generated fallback metadata 
+                using the keyword extraction algorithm — the system never fails silently.
               </p>
             </div>
           </section>
@@ -205,7 +249,7 @@ export default function DocsPage() {
             <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
               <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
                 <p className="font-medium text-foreground">Frontend</p>
-                <p>Next.js 14+ (App Router)</p>
+                <p>Next.js 16+ (App Router)</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
                 <p className="font-medium text-foreground">Styling</p>
@@ -213,11 +257,11 @@ export default function DocsPage() {
               </div>
               <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
                 <p className="font-medium text-foreground">Database</p>
-                <p>PostgreSQL + Prisma ORM</p>
+                <p>PostgreSQL + Prisma v7</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
                 <p className="font-medium text-foreground">AI Engine</p>
-                <p>Google Gemini (gemini-2.0-flash)</p>
+                <p>Groq AI (Llama 3.3-70b)</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
                 <p className="font-medium text-foreground">Animations</p>
@@ -225,7 +269,7 @@ export default function DocsPage() {
               </div>
               <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
                 <p className="font-medium text-foreground">Deployment</p>
-                <p>Vercel + Neon/Supabase</p>
+                <p>Vercel + Neon</p>
               </div>
             </div>
           </section>
@@ -236,7 +280,7 @@ export default function DocsPage() {
       <footer className="border-t border-border/50 mt-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 text-center">
           <p className="text-xs text-muted-foreground">
-            Cortex – Built with Next.js, Prisma, Google Gemini & Framer Motion
+            Cortex – Built with Next.js, Prisma, Groq AI & Framer Motion
           </p>
         </div>
       </footer>

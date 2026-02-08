@@ -45,9 +45,9 @@ const typeConfig = {
   },
   FILE: {
     icon: File,
-    color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    color: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
     label: "File",
-    accent: "purple",
+    accent: "zinc",
   },
 };
 
@@ -165,8 +165,8 @@ export function NoteModal({ note, isOpen, onClose }: NoteModalProps) {
 
               {/* File */}
               {note.fileName && (
-                <div className="flex items-center gap-3 p-3 bg-purple-500/10 rounded-lg">
-                  <File className="h-6 w-6 text-purple-500" />
+                <div className="flex items-center gap-3 p-3 bg-zinc-500/10 rounded-lg">
+                  <File className="h-6 w-6 text-zinc-500" />
                   <div>
                     <p className="font-medium text-sm">{note.fileName}</p>
                     {note.fileType && <p className="text-xs text-muted-foreground">{note.fileType}</p>}

@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await queryKnowledgeBase(question);
+    // Public endpoint: only query public notes to prevent data leakage
+    const result = await queryKnowledgeBase(question, { publicOnly: true });
 
     return NextResponse.json(
       {
@@ -95,7 +96,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await queryKnowledgeBase(question);
+    // Public endpoint: only query public notes to prevent data leakage
+    const result = await queryKnowledgeBase(question, { publicOnly: true });
 
     return NextResponse.json(
       {

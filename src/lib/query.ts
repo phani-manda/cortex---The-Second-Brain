@@ -9,7 +9,7 @@
  */
 
 import Groq from "groq-sdk";
-import { getAllNotes } from "@/lib/db";
+import { getAllNotes, getPublicNotes } from "@/lib/db";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
@@ -23,10 +23,19 @@ export type QueryResult = {
   confidence: "high" | "medium" | "low";
 };
 
-export async function queryKnowledgeBase(question: string): Promise<QueryResult> {
+export type QueryOptions = {
+  publicOnly?: boolean;
+};
+
+export async function queryKnowledgeBase(
+  question: string,
+  options: QueryOptions = {}
+): Promise<QueryResult> {
   try {
-    // Retrieve all notes to search through
-    const notes = await getAllNotes();
+    // Retrieve notes based on access level (public endpoints only see public notes)
+    const notes = options.publicOnly
+      ? await getPublicNotes(100) // Get up to 100 public notes for querying
+      : await getAllNotes();
 
     if (notes.length === 0) {
       return {

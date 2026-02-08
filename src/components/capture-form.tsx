@@ -140,32 +140,54 @@ export function CaptureForm({ onNoteCreated }: CaptureFormProps) {
   };
 
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardContent className="pt-6">
+    <Card className="border-zinc-500/20 bg-card/50 backdrop-blur-md shadow-xl shadow-zinc-900/10 overflow-hidden relative">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-zinc-500/5 via-transparent to-zinc-400/5 pointer-events-none" />
+      <CardContent className="pt-6 relative">
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Capture a Thought</h2>
+            <motion.div
+              animate={{ rotate: [0, 15, -15, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Sparkles className="h-5 w-5 text-zinc-400" />
+            </motion.div>
+            <h2 className="text-lg font-semibold bg-gradient-to-r from-zinc-300 to-zinc-100 bg-clip-text text-transparent">Capture a Thought</h2>
           </div>
           
           {/* Mode Tabs */}
-          <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+          <div className="flex gap-1 p-1.5 bg-zinc-900/30 rounded-lg border border-zinc-500/20 relative">
             {(["note", "link", "file"] as CaptureMode[]).map((m) => {
               const Icon = modeIcons[m];
               return (
-                <button
+                <motion.button
                   key={m}
                   onClick={() => setMode(m)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all duration-300 relative z-10 ${
                     mode === m
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "text-white"
+                      : "text-muted-foreground hover:text-zinc-300"
                   }`}
                   type="button"
+                  whileHover={{ scale: mode === m ? 1 : 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="capitalize">{m}</span>
-                </button>
+                  {mode === m && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-gradient-to-r from-zinc-600 to-zinc-500 rounded-md shadow-lg shadow-zinc-500/30"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <motion.div 
+                    className="relative z-10 flex items-center gap-2"
+                    animate={mode === m ? { scale: [1, 1.1, 1] } : {}}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="capitalize">{m}</span>
+                  </motion.div>
+                </motion.button>
               );
             })}
           </div>
@@ -186,7 +208,7 @@ export function CaptureForm({ onNoteCreated }: CaptureFormProps) {
                   placeholder="What's on your mind? E.g., 'Need to look into React server components for the new project...'"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[120px] resize-none bg-background/50 text-base"
+                  className="min-h-[120px] resize-none bg-zinc-900/20 border-zinc-500/20 text-base focus:ring-2 focus:ring-zinc-500/30 focus:border-zinc-400/50 transition-all duration-300 placeholder:text-zinc-400/40"
                   disabled={status === "processing"}
                 />
               </motion.div>
@@ -204,13 +226,13 @@ export function CaptureForm({ onNoteCreated }: CaptureFormProps) {
                   Save a URL with optional notes — AI will analyze and categorize it.
                 </p>
                 <div className="flex items-center gap-2">
-                  <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Link2 className="h-4 w-4 text-zinc-400 flex-shrink-0" />
                   <Input
                     type="url"
                     placeholder="https://example.com/article"
                     value={linkUrl}
                     onChange={(e) => setLinkUrl(e.target.value)}
-                    className="bg-background/50"
+                    className="bg-zinc-900/20 border-zinc-500/20 focus:ring-2 focus:ring-zinc-500/30 focus:border-zinc-400/50 transition-all duration-300"
                     disabled={status === "processing"}
                   />
                 </div>
@@ -218,7 +240,7 @@ export function CaptureForm({ onNoteCreated }: CaptureFormProps) {
                   placeholder="Optional: Add notes about this link..."
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[80px] resize-none bg-background/50 text-base"
+                  className="min-h-[80px] resize-none bg-zinc-900/20 border-zinc-500/20 text-base focus:ring-2 focus:ring-zinc-500/30 focus:border-zinc-400/50 transition-all duration-300 placeholder:text-zinc-400/40"
                   disabled={status === "processing"}
                 />
               </motion.div>
@@ -243,29 +265,43 @@ export function CaptureForm({ onNoteCreated }: CaptureFormProps) {
                   disabled={status === "processing"}
                 />
                 {!fileName ? (
-                  <button
+                  <motion.button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+                    className="w-full border-2 border-dashed border-zinc-500/30 rounded-lg p-8 flex flex-col items-center gap-2 text-zinc-300/70 hover:border-zinc-400/50 hover:text-zinc-300 hover:bg-zinc-500/5 transition-all duration-300"
                     type="button"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                   >
-                    <Upload className="h-8 w-8" />
-                    <span className="text-sm font-medium">Click to select a file</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{fileName}</p>
-                      <p className="text-xs text-muted-foreground">{fileType}</p>
-                    </div>
-                    <button
-                      onClick={clearFile}
-                      className="p-1 hover:bg-muted rounded"
-                      type="button"
+                    <motion.div
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
+                      <Upload className="h-8 w-8" />
+                    </motion.div>
+                    <span className="text-sm font-medium">Click to select a file</span>
+                  </motion.button>
+                ) : (
+                  <motion.div 
+                    className="flex items-center gap-3 p-3 bg-zinc-500/10 rounded-lg border border-zinc-500/20"
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <FileText className="h-8 w-8 text-zinc-400" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate text-zinc-200">{fileName}</p>
+                      <p className="text-xs text-zinc-400/70">{fileType}</p>
+                    </div>
+                    <motion.button
+                      onClick={clearFile}
+                      className="p-1 hover:bg-zinc-500/20 rounded transition-colors"
+                      type="button"
+                      whileHover={{ scale: 1.1, rotate: 90 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <X className="h-4 w-4 text-zinc-400" />
+                    </motion.button>
+                  </motion.div>
                 )}
                 <Textarea
                   placeholder="Optional: Describe this file..."
@@ -279,14 +315,16 @@ export function CaptureForm({ onNoteCreated }: CaptureFormProps) {
           </AnimatePresence>
 
           <div className="flex items-center justify-between">
-            <button
+<motion.button
               onClick={() => setIsPublic(!isPublic)}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className={`flex items-center gap-2 text-sm transition-all duration-300 ${isPublic ? 'text-zinc-400' : 'text-muted-foreground hover:text-zinc-300'}`}
               type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Globe className={`h-4 w-4 ${isPublic ? "text-primary" : ""}`} />
+              <Globe className={`h-4 w-4 transition-transform duration-300 ${isPublic ? "scale-110" : ""}`} />
               {isPublic ? "Public" : "Private"}
-            </button>
+            </motion.button>
 
             <motion.div whileTap={{ scale: 0.97 }}>
               <Button

@@ -41,32 +41,32 @@ interface NoteCardProps {
 const typeConfig = {
   NOTE: {
     icon: FileText,
-    color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    color: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30 hover:shadow-zinc-500/20",
     label: "Note",
   },
   LINK: {
     icon: Link2,
-    color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    color: "bg-teal-500/15 text-teal-400 border-teal-500/30 hover:shadow-teal-500/20",
     label: "Link",
   },
   INSIGHT: {
     icon: Lightbulb,
-    color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    color: "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:shadow-amber-500/20",
     label: "Insight",
   },
   FILE: {
     icon: File,
-    color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    color: "bg-slate-500/15 text-slate-400 border-slate-500/30 hover:shadow-slate-500/20",
     label: "File",
   },
 };
 
 function getPriorityInfo(priority: number) {
-  if (priority >= 90) return { label: "Critical", color: "text-red-500", bg: "from-red-500 to-red-400" };
-  if (priority >= 70) return { label: "High", color: "text-orange-500", bg: "from-orange-500 to-orange-400" };
-  if (priority >= 50) return { label: "Medium", color: "text-primary", bg: "from-primary/80 to-primary/60" };
-  if (priority >= 30) return { label: "Low", color: "text-blue-400", bg: "from-blue-400 to-blue-300" };
-  return { label: "Minimal", color: "text-slate-400", bg: "from-slate-400 to-slate-300" };
+  if (priority >= 90) return { label: "Critical", color: "text-rose-400", bg: "from-rose-500 via-red-500 to-orange-500", glow: true };
+  if (priority >= 70) return { label: "High", color: "text-orange-400", bg: "from-orange-500 to-amber-500", glow: false };
+  if (priority >= 50) return { label: "Medium", color: "text-zinc-400", bg: "from-zinc-500 to-slate-500", glow: false };
+  if (priority >= 30) return { label: "Low", color: "text-slate-400", bg: "from-slate-400 to-zinc-400", glow: false };
+  return { label: "Minimal", color: "text-slate-500", bg: "from-slate-500 to-slate-400", glow: false };
 }
 
 export function NoteCard({ note, index, onDelete, onTogglePublic, onOpen }: NoteCardProps) {
@@ -90,65 +90,80 @@ export function NoteCard({ note, index, onDelete, onTogglePublic, onOpen }: Note
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{
-        duration: 0.5,
-        ease: [0.22, 1, 0.36, 1],
-      }}
       layout
       whileHover={{ 
-        scale: 1.02,
-        transition: { duration: 0.2, ease: "easeOut" }
+        scale: 1.03,
+        y: -8,
+        transition: { duration: 0.25, ease: "easeOut", type: "spring", stiffness: 400, damping: 20 }
       }}
-      whileTap={{ scale: 0.98 }}
-      className="group cursor-pointer h-full"
+      whileTap={{ scale: 0.97 }}
+      className="group cursor-pointer h-full will-change-transform"
       onClick={handleCardClick}
     >
-      <Card className="h-full border-border/40 bg-card/90 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 relative overflow-hidden">
-        {/* Priority Indicator Bar - subtle gradient */}
-        <div 
-          className={`absolute top-0 left-0 h-1 bg-gradient-to-r ${priorityInfo.bg} opacity-80 transition-all`}
-          style={{ width: `${note.priority ?? 50}%`, minWidth: "10px" }}
+      <Card className="h-full border-zinc-500/20 bg-card/60 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:shadow-zinc-500/20 hover:border-zinc-400/40 relative overflow-hidden group-hover:bg-card/80">
+        {/* Gradient border glow on hover */}
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-zinc-500/0 via-zinc-400/0 to-zinc-500/0 opacity-0 group-hover:opacity-100 group-hover:from-zinc-500/10 group-hover:via-zinc-400/10 group-hover:to-zinc-500/10 transition-opacity duration-500 pointer-events-none" />
+        {/* Priority Indicator Bar - animated gradient */}
+        <motion.div 
+          className={`absolute top-0 left-0 h-1 bg-gradient-to-r ${priorityInfo.bg} ${priorityInfo.glow ? 'shadow-[0_0_10px_rgba(236,72,153,0.5)]' : ''}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${note.priority ?? 50}%` }}
+          transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          style={{ minWidth: "10px" }}
         />
         <CardHeader className="pb-3 pt-5 px-5">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <Badge
                 variant="outline"
-                className={`${config.color} text-xs font-medium`}
+                className={`${config.color} text-xs font-medium transition-all duration-300 hover:shadow-lg`}
               >
                 <Icon className="mr-1 h-3 w-3" />
                 {config.label}
               </Badge>
               {(note.priority ?? 50) >= 70 && (
-                <span className={`flex items-center gap-0.5 text-[10px] ${priorityInfo.color}`} title={`Priority: ${note.priority ?? 50}`}>
+                <motion.span 
+                  className={`flex items-center gap-0.5 text-[10px] ${priorityInfo.color}`} 
+                  title={`Priority: ${note.priority ?? 50}`}
+                  animate={priorityInfo.glow ? { scale: [1, 1.05, 1] } : {}}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
                   <Zap className="h-3 w-3" />
                   {priorityInfo.label}
-                </span>
+                </motion.span>
               )}
             </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
+            <motion.div 
+              className="flex items-center gap-1"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              style={{ opacity: 0 }}
+            >
+              <motion.button
                 onClick={() => onTogglePublic(note.id)}
-                className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                className="p-1.5 rounded-md hover:bg-zinc-500/20 transition-all duration-200 opacity-0 group-hover:opacity-100"
                 title={note.isPublic ? "Make private" : "Make public"}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
                 {note.isPublic ? (
-                  <Globe className="h-3.5 w-3.5 text-primary" />
+                  <Globe className="h-3.5 w-3.5 text-zinc-400" />
                 ) : (
-                  <GlobeLock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <GlobeLock className="h-3.5 w-3.5 text-muted-foreground hover:text-zinc-400" />
                 )}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 onClick={() => onDelete(note.id)}
-                className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
+                className="p-1.5 rounded-md hover:bg-destructive/20 transition-all duration-200 opacity-0 group-hover:opacity-100"
                 title="Delete note"
+                whileHover={{ scale: 1.1, rotate: 10 }}
+                whileTap={{ scale: 0.9 }}
               >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           </div>
           <h3 className="font-semibold text-sm leading-tight mt-2">
             {note.title}
@@ -172,7 +187,7 @@ export function NoteCard({ note, index, onDelete, onTogglePublic, onOpen }: Note
             </a>
           )}
           {note.fileName && (
-            <p className="flex items-center gap-1.5 text-xs text-purple-500">
+            <p className="flex items-center gap-1.5 text-xs text-zinc-500">
               <File className="h-3 w-3" />
               {note.fileName}
             </p>

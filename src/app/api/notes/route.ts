@@ -1,14 +1,24 @@
 /**
- * POST /api/notes – Create a new note
- * GET  /api/notes – Retrieve all notes (with optional search query)
+ * POST /api/notes – Create a new note (requires authentication)
+ * GET  /api/notes – Retrieve user's notes (requires authentication)
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createNote, getAllNotes, searchNotes } from "@/lib/db";
 import { analyzeContent, analyzeLink, analyzeFile } from "@/lib/ai";
 import { checkRateLimit, getClientIP, rateLimitHeaders, RATE_LIMITS } from "@/lib/rate-limit";
+import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  // Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Authentication required. Please sign in." },
+      { status: 401 }
+    );
+  }
+
   // Rate limit: AI operations are expensive
   const ip = getClientIP(request);
   const rateCheck = checkRateLimit(ip, { ...RATE_LIMITS.ai, identifier: "notes:create" });
@@ -47,7 +57,7 @@ export async function POST(request: NextRequest) {
       analysis = await analyzeContent(content.trim());
     }
 
-    // Save the AI-enriched note to the database
+    // Save the AI-enriched note to the database (linked to user)
     const note = await createNote({
       title: analysis.title,
       content: content?.trim() || (hasLink ? sourceUrl : fileName),
@@ -59,6 +69,7 @@ export async function POST(request: NextRequest) {
       sourceUrl: hasLink ? sourceUrl.trim() : undefined,
       fileName: hasFile ? fileName.trim() : undefined,
       fileType: hasFile ? (fileType || undefined) : undefined,
+      userId: session.user.id,
     });
 
     return NextResponse.json(note, { 
@@ -75,6 +86,15 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Authentication check
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Authentication required. Please sign in." },
+      { status: 401 }
+    );
+  }
+
   // Rate limit: standard for reads
   const ip = getClientIP(request);
   const rateCheck = checkRateLimit(ip, { ...RATE_LIMITS.standard, identifier: "notes:read" });
@@ -94,9 +114,9 @@ export async function GET(request: NextRequest) {
 
     let notes;
     if (query) {
-      notes = await searchNotes(query);
+      notes = await searchNotes(query, session.user.id);
     } else {
-      notes = await getAllNotes();
+      notes = await getAllNotes(session.user.id);
     }
 
     // Filter by type if specified (case-insensitive)

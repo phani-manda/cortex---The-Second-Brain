@@ -113,9 +113,9 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
   useEffect(() => {
     fetchNotes().then(() => {
       // Mark as loaded after first fetch for animation purposes
-      if (!hasLoaded) setHasLoaded(true);
+      setHasLoaded(true);
     });
-  }, [fetchNotes, refreshTrigger, hasLoaded]);
+  }, [fetchNotes, refreshTrigger]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -233,24 +233,27 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
         </motion.div>
       ) : (
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6"
         >
-          <AnimatePresence mode="popLayout">
-            {notes.map((note, index) => (
-              <motion.div key={note.id} variants={itemVariants} layout>
-                <NoteCard
-                  note={note}
-                  index={index}
-                  onDelete={handleDelete}
-                  onTogglePublic={handleTogglePublic}
-                  onOpen={handleOpenNote}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          {notes.map((note, index) => (
+            <motion.div 
+              key={note.id} 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.3 }}
+            >
+              <NoteCard
+                note={note}
+                index={index}
+                onDelete={handleDelete}
+                onTogglePublic={handleTogglePublic}
+                onOpen={handleOpenNote}
+              />
+            </motion.div>
+          ))}
         </motion.div>
       )}
 
