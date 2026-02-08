@@ -100,12 +100,26 @@ function generateFallbackAnalysis(rawText: string, contentType?: "text" | "link"
   if (lowercaseText.includes("meeting") || lowercaseText.includes("call")) suggestedTags.push("meetings");
   if (lowercaseText.includes("book") || lowercaseText.includes("article")) suggestedTags.push("reading");
   
-  // Detect insight patterns
+  // Detect insight patterns - expanded keywords for better classification
   const isInsight = lowercaseText.includes("realize") || 
+                    lowercaseText.includes("realised") ||
                     lowercaseText.includes("aha") || 
                     lowercaseText.includes("finally understand") ||
                     lowercaseText.includes("breakthrough") ||
-                    lowercaseText.includes("discovered");
+                    lowercaseText.includes("discovered") ||
+                    lowercaseText.includes("learned") ||
+                    lowercaseText.includes("learnt") ||
+                    lowercaseText.includes("figured out") ||
+                    lowercaseText.includes("epiphany") ||
+                    lowercaseText.includes("revelation") ||
+                    lowercaseText.includes("understood") ||
+                    lowercaseText.includes("insight") ||
+                    lowercaseText.includes("key takeaway") ||
+                    lowercaseText.includes("the secret is") ||
+                    lowercaseText.includes("turns out") ||
+                    lowercaseText.includes("now i know") ||
+                    lowercaseText.includes("clicked") ||
+                    lowercaseText.includes("makes sense now");
   
   // Determine type
   let type: "NOTE" | "LINK" | "INSIGHT" | "FILE" = "NOTE";
@@ -145,12 +159,12 @@ export async function analyzeContent(rawText: string, contentType?: "text" | "li
 5. "type": Classify as one of:
    - "NOTE" for general thoughts, ideas, or reflections
    - "LINK" if the text contains or references a URL or external resource
-   - "INSIGHT" if it contains a realization, learning, breakthrough, or aha-moment
+   - "INSIGHT" if it contains a realization, learning, discovery, understanding, or aha-moment. Look for phrases like: realized, learned, figured out, now I understand, turns out, the key is, makes sense, clicked, breakthrough, epiphany, takeaway
    - "FILE" if this is describing a file attachment
 6. "priority": A number from 1-100 indicating importance based on these keywords and factors:
    - 90-100: Critical (contains: urgent, deadline, emergency, asap, critical)
    - 75-89: High (contains: important, key decision, must-do, action required)
-   - 65-74: Insight (contains: realized, discovered, breakthrough, learned)
+   - 65-74: Insight (contains: realized, discovered, breakthrough, learned, understood, figured out)
    - 50-64: Standard (general notes, information, ideas)
    - 30-49: Low (nice-to-have, reference, bookmark)
    - 1-29: Minimal (trivial, filler, redundant)

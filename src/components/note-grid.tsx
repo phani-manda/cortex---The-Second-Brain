@@ -225,12 +225,18 @@ export function NoteGrid({ refreshTrigger }: NoteGridProps) {
         >
           <Brain className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-muted-foreground">
-            {debouncedQuery ? "No matching thoughts" : "Your brain is empty"}
+            {debouncedQuery 
+              ? "No matching thoughts" 
+              : activeFilter !== "ALL" 
+                ? `No ${filterOptions.find(f => f.value === activeFilter)?.label.toLowerCase() || 'items'} yet`
+                : "Your brain is empty"}
           </h3>
           <p className="text-sm text-muted-foreground/70 mt-1">
             {debouncedQuery
               ? "Try a different search query"
-              : "Capture your first thought above to get started"}
+              : activeFilter !== "ALL"
+                ? `Capture thoughts with ${activeFilter === 'INSIGHT' ? 'realizations or breakthroughs' : activeFilter === 'LINK' ? 'URLs' : activeFilter === 'FILE' ? 'file attachments' : 'notes'}`
+                : "Capture your first thought above to get started"}
           </p>
         </motion.div>
       ) : (
